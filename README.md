@@ -41,10 +41,12 @@ Dockerがインストールされた環境であれば、以下のコマンド�
 ```bash
 git clone <repository_url>
 cd my_portfolio
+```
 
 ### 2. コンテナのビルドと起動
 ```bash
 docker-compose up --build
+```
 
 ### 3. ブラウザでアクセス
 http://localhost:8000/ にアクセスしてデータ一覧と分析結果を確認します。
