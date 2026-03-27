@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>物件データ一覧</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        table { border-collapse: collapse; width: 100%; max-width: 800px; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+        th { background-color: #f4f4f4; }
+    </style>
+</head>
+<body>
+    <h1>🏢ダミー物件データ一覧</h1>
+    <p>Javaの重回帰分析ロジックで生成したデータです。</p>
+    
+    <!-- 平均家賃・相関係数 -->
+    <div style="background-color: #eef9f0; padding: 15px; margin-bottom: 20px; border-radius: 5px; border: 1px solid #cce8d4;">
+        <h3 style="margin-top: 0;">📊データ分析インサイト</h3>
+        <ul style="font-size: 1.1em;">
+            <li><strong>平均家賃:</strong> {{ avg_rent }} 万円</li>
+            <li><strong>家賃と築年数の相関係数:</strong> {{ corr_rent_age }} 
+                <span style="font-size: 0.9em; color: #555;">
+                    （※マイナスに近いほど、築年数が古い＝家賃が安いという負の相関を示します）
+                </span>
+            </li>
+        </ul>
+    </div>
+
+     <!-- ヒストグラム -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <div style="width: 100%; max-width: 600px; margin: 20px auto;">
+        <canvas id="rentHistogramChart"></canvas>
+    </div>
+
+    <script>
+        // DjangoのリストをJavaScriptの配列に
+        const histLabels = {{ hist_labels|safe }};
+        const histCounts = {{ hist_counts|safe }};
+
+        // Chart.jsの設定
+        const ctx = document.getElementById('rentHistogramChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'bar', // ヒストグラムを指定
+            data: {
+                labels: histLabels, // 階級
+                datasets: [{
+                    label: '物件数', // ダミー
+                    data: histCounts,
+                    backgroundColor: 'rgba(54, 162, 235, 0.6)', // ドットの色
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1,
+                    barPercentage:1.0,
+                    categoryPercentage:1.0
+                }]
+            },
+            options: {
+                scales: {
+                    x: {
+                        title: { display: true, text: '家賃価格帯' }
+                    },
+                    y: {
+                        title: { display: true, text: '物件数（件）' },
+                        beginAtZero: true,
+                        ticks:{
+                            stepSize: 1
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+
+    <!-- 検索 -->
+    <div style="background-color: #f8f9fa; padding: 15px; margin-bottom: 20px; border-radius: 5px; border: 1px solid #dee2e6;">
+        <h3 style="margin-top: 0;">🔍 物件を絞り込む</h3>
+        <form method="GET" action="">
+            <label style="margin-right: 15px;">
+                家賃上限（万円）: 
+                <input type="number" name="max_rent" value="{{ request.GET.max_rent }}">
+            </label>
+            <label style="margin-right: 15px;">
+                築年数上限（年）: 
+                <input type="number" name="max_age" value="{{ request.GET.max_age }}">
+            </label>
+            <button type="submit" style="padding: 5px 15px; cursor: pointer;">検索</button>
+            <a href="{% url 'house_list' %}" style="margin-left: 10px; font-size: 0.9em; color: #666;">条件をクリア</a>
+        </form>
+    </div>
+
+    <!-- 推薦 -->
+    <div style="background-color: #fff3cd; padding: 15px; margin-bottom: 20px; border-radius: 5px; border: 1px solid #ffeeba;">
+        <h3 style="margin-top: 0; color: #856404;">✨ AI選定！お宝物件トップ5</h3>
+        <p style="color: #856404;">機械学習モデルが算出した「適正家賃」より、実際の家賃が安く設定されているお得な物件です。</p>
+        
+        <ul>
+            {% for bargain in top_bargains %}
+            
+            <li style="margin-bottom: 10px;">
+                <strong>物件ID: {{ bargain.id }}</strong><br>
+                実際の家賃: {{ bargain.rent }}万円 
+                <span style="color: #666;">(AI予測の適正家賃: {{ bargain.predicted_rent|floatformat:1 }}万円)</span><br>
+                
+                <span style="color: #d9534f; font-weight: bold;">
+                    なんと {{ bargain.rent|floatformat:1 }} 万円お得！
+                </span><br>
+                
+                <span style="font-size: 0.9em; color: #666;">
+                    (築{{ bargain.age }}年 / 駅徒歩{{ bargain.distance }}km / 広さレベル{{ bargain.layout }})
+                </span>
+            </li>
+            
+            {% endfor %}
+
+            <div style="margin-bottom: 15px; font-size: 0.9em;">
+                {% if is_significant %}
+                    <span style="color: #28a745; font-weight: bold;">● 信頼性：高</span>
+                {% else %}
+                    <span style="color: #6c757d;">● 信頼性：判定中</span>
+                {% endif %}
+            
+                    <span style="margin-left: 10px;">{{ reliability_msg }}</span>
+            </div>
+            <ul>
+                {% for bargain in top_bargains %}
+                    {% endfor %}
+            </ul>
+        </ul>
+
+            {% if plot_data%}
+                <div style="margin-bottom: 20px; text-align: center;">
+                    <img src="{{ plot_data }}" alt="分析グラフ" style="max-width: 100%; height: auto; border: 1px solid #ddd; border-radius: 8px;">
+                </div>
+            {% endif %}
+    </div>
+
+    <!-- Javaデータ生成 -->
+    <form method="POST" action="{% url 'generate_new_data' %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-warning">
+            最新の市場データを生成する（AI再学習）
+        </button>
+    </form>
+</body>
+</html>
