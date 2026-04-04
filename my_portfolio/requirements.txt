@@ -3,3 +3,5 @@ pandas
 numpy
 scikit-learn
 rpy2
+gunicorn    # 本番用サーバー
+whitenoise  # 静的ファイル配信

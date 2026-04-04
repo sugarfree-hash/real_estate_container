@@ -18,5 +18,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 # 5. コードやJARファイルなど、すべてを箱の中にコピー
 COPY . /app/
 
-# 6. 箱を起動したときに最初に実行するコマンド（Djangoサーバー起動）
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+# 6. 箱を起動したときに最初に実行するコマンド（Gunicorn起動）
+# --timeout 120 はRの解析時間を考慮した長めの設定
+CMD ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "1", "--timeout", "120"]
